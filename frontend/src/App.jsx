@@ -1,16 +1,23 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import ProfileForm from "./components/profileForm.jsx";
-import ProfileView from "./components/profileView.jsx";
+import { useState } from "react";
+import ProfileForm from "./components/ProfileForm";
+import ProfileView from "./components/ProfileView";
 
 function App() {
+  const [selectedUser, setSelectedUser] = useState(null);
+
   return (
-    <Router>
-      <Routes>
-        <Route path="/add" element={<ProfileForm />} />
-        <Route path="/view" element={<ProfileView />} />
-        <Route path="/Home" element={<h1>Profile</h1>} />
-      </Routes>
-    </Router>
+    <div>
+      <h1>Student Profile</h1>
+
+      <ProfileForm
+        user={selectedUser}
+        onSuccess={() => setSelectedUser(null)}
+      />
+
+      <hr />
+
+      <ProfileView onEdit={(user) => setSelectedUser(user)} />
+    </div>
   );
 }
 

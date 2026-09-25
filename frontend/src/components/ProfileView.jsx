@@ -1,62 +1,89 @@
 import { useState } from "react";
-import axios from "axios";
+import { getProfileDetails } from "../services/profile.service";
 
-const ProfileView = () => {
-  const [searchId, setSearchId] = useState("");
+function ProfileView({ onEdit }) {
+  const [id, setId] = useState("");
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSearch = async (e) => {
-    e.preventDefault();
+  const handleSearch = async () => {
+    if (!id) {
+      setError("Please enter user ID");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+    setUser(null);
 
     try {
-      const response = await axios.get(
-        `http://localhost:3000/api/profile/users/${searchId}`,
-      );
-      setUser(response.data[0]);
+      const data = await getProfileDetails(id);
+      setUser(data);
     } catch (error) {
-      console.log(error);
-      setUser(null);
+      console.error(error);
+
+      setError(error.response?.data?.message || "Profile not found");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div>
-      <h1>Search Profile</h1>
-      <form onSubmit={handleSearch}>
-        <input
-          type="text"
-          value={searchId}
-          placeholder="Enter profile UUID string"
-          onChange={(e) => setSearchId(e.target.value)}
-        />
-        <button type="submit">Query</button>
-      </form>
+    <div className="profile-view">
+      <h2>Search User By Id</h2>
+
+      <input
+        type="number"
+        value={id}
+        onChange={(e) => setId(e.target.value)}
+        placeholder="Enter User ID"
+      />
+
+      <button onClick={handleSearch}>Get User</button>
+
+      {loading && <p>Loading...</p>}
+
+      {error && <p>{error}</p>}
 
       {user && (
         <div>
-          <h3>Profile Details</h3>
+          <h3>User Details</h3>
+
           <p>
             <strong>ID:</strong> {user.id}
           </p>
+
           <p>
             <strong>Name:</strong> {user.name}
           </p>
+
           <p>
             <strong>Email:</strong> {user.email}
           </p>
+
           <p>
             <strong>Phone:</strong> {user.phone}
           </p>
+
           <p>
             <strong>Address:</strong> {user.address}
           </p>
+
           <p>
             <strong>Age:</strong> {user.age}
           </p>
+
+          <p>
+            <strong>Created At:</strong>{" "}
+            {new Date(user.created_at).toLocaleString()}
+          </p>
+
+          <button onClick={() => onEdit(user)}>Edit User Profile</button>
         </div>
       )}
     </div>
   );
-};
+}
 
 export default ProfileView;

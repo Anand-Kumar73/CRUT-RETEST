@@ -1,4 +1,4 @@
-import crypto from "crypto";
+import { randomUUID } from "node:crypto";
 import pool from "../config/db.js";
 
 export const getUserById = async (req, res) => {
@@ -22,7 +22,6 @@ export const getUserById = async (req, res) => {
   }
 };
 
-
 export const createUser = async (req, res) => {
   try {
     const { name, email, phone, address, age } = req.body;
@@ -40,20 +39,21 @@ export const createUser = async (req, res) => {
     }
 
     const existingUser = await pool.query(
-      "SELECT id FROM users WHERE email = \$1",
+      "SELECT id FROM users WHERE email = $1",
       [email],
     );
 
     if (existingUser.rows.length > 0) {
-      return res.status(409).json({ message: "Email already exists" });
+      return res.status(409).json({
+        message: "Email already exists",
+      });
     }
 
-    const uniqueId = crypto.randomUUID();
     const result = await pool.query(
-      `INSERT INTO users (id, name, email, phone, address, age)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO users (name, email, phone, address, age)
+       VALUES ($1, $2, $3, $4, $5)
        RETURNING id`,
-      [uniqueId, name, email, phone, address, age],
+      [name, email, phone, address, age],
     );
 
     res.status(201).json({
@@ -62,7 +62,10 @@ export const createUser = async (req, res) => {
     });
   } catch (error) {
     console.error("Failed to create profile:", error.message);
-    res.status(500).json({ message: "Failed to create profile" });
+
+    res.status(500).json({
+      message: "Failed to create profile",
+    });
   }
 };
 
@@ -72,8 +75,8 @@ export const updateUser = async (req, res) => {
     const { name, email, phone, address, age } = req.body;
 
     if (!name || !email || !phone || !address || age === undefined) {
-      return res.status(400).json({ 
-        message: "Name, email, phone, address and age are required" 
+      return res.status(400).json({
+        message: "Name, email, phone, address and age are required",
       });
     }
 
@@ -84,32 +87,43 @@ export const updateUser = async (req, res) => {
     }
 
     const emailCheck = await pool.query(
-      "SELECT id FROM users WHERE email = \$1 AND id != \$2",
+      "SELECT id FROM users WHERE email = $1 AND id != $2",
       [email, id],
     );
 
     if (emailCheck.rows.length > 0) {
-      return res.status(409).json({ message: "Email already exists" });
+      return res.status(409).json({
+        message: "Email already exists",
+      });
     }
 
     const result = await pool.query(
       `UPDATE users
-       SET name = $1, email = $2, phone = $3, address = $4, age = $5
+       SET name = $1,
+           email = $2,
+           phone = $3,
+           address = $4,
+           age = $5
        WHERE id = $6
-       RETURNING id, name, email, created_at`,
+       RETURNING id, name, email, phone, address, age, created_at`,
       [name, email, phone, address, age, id],
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({
+        message: "Profile not found",
+      });
     }
 
     res.status(200).json({
-      message: "User updated successfully",
+      message: "Profile updated successfully",
       user: result.rows[0],
     });
   } catch (error) {
-    console.error("Failed to update user:", error.message);
-    res.status(500).json({ message: "Failed to update user" });
+    console.error("Failed to update profile:", error);
+
+    res.status(500).json({
+      message: "Failed to update profile",
+    });
   }
 };
